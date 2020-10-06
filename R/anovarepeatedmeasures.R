@@ -1750,7 +1750,9 @@ AnovaRepeatedMeasures <- function(jaspResults, dataset = NULL, options) {
 }
 
 .summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE, conf.interval=.95, .drop=TRUE, 
-                       errorBarType="confidenceInterval", usePooledSE=FALSE) {
+                       errorBarType="confidenceInterval", usePooledSE=FALSE,
+                       dependentName = .BANOVAdependentName,
+                       subjectName = .BANOVAsubjectName) {
   
   # New version of length which can handle NA's: if na.rm==T, don't count them
   length2 <- function (x, na.rm=FALSE) {
@@ -1764,14 +1766,14 @@ AnovaRepeatedMeasures <- function(jaspResults, dataset = NULL, options) {
   # This does the summary. For each group's data frame, return a vector with
   # N, mean, and sd
   # First aggregate over unused RM factors, if desired:
-  if (usePooledSE && measurevar == .BANOVAdependentName) {
+  if (usePooledSE && measurevar == dependentName) {
 
-    data <- plyr::ddply(data, c(.BANOVAsubjectName, groupvars), plyr::summarise, dependent = mean(JaspColumn_.dependent._Encoded))
+    data <- plyr::ddply(data, c(subjectName, groupvars), plyr::summarise, dependent = mean(JaspColumn_.dependent._Encoded))
     names(data)[which(names(data) == "dependent")] <- measurevar
 
-  } else if (usePooledSE && measurevar == paste0(.BANOVAdependentName, "_norm")) {
+  } else if (usePooledSE && measurevar == paste0(dependentName, "_norm")) {
 
-    data <- plyr::ddply(data, c(.BANOVAsubjectName, groupvars), plyr::summarise, dependent = mean(JaspColumn_.dependent._Encoded_norm))
+    data <- plyr::ddply(data, c(subjectName, groupvars), plyr::summarise, dependent = mean(JaspColumn_.dependent._Encoded_norm))
     names(data)[which(names(data) == "dependent")] <- measurevar
   }
 
@@ -1839,11 +1841,14 @@ AnovaRepeatedMeasures <- function(jaspResults, dataset = NULL, options) {
 }
 
 .summarySEwithin <- function(data=NULL, measurevar, betweenvars=NULL, withinvars=NULL, idvar=NULL, na.rm=FALSE, 
-                             conf.interval=.95, .drop=TRUE, errorBarType="confidenceInterval", usePooledSE=FALSE) {
+                             conf.interval=.95, .drop=TRUE, errorBarType="confidenceInterval", usePooledSE=FALSE,
+                             dependentName = .BANOVAdependentName,
+                             subjectName = .BANOVAsubjectName) {
   
   # Get the means from the un-normed data
   datac <- .summarySE(data, measurevar, groupvars=c(betweenvars, withinvars), na.rm=na.rm, 
-                      conf.interval=conf.interval, .drop=.drop, errorBarType=errorBarType, usePooledSE=usePooledSE)
+                      conf.interval=conf.interval, .drop=.drop, errorBarType=errorBarType, usePooledSE=usePooledSE,
+                      dependentName = dependentName, subjectName = subjectName)
   # Drop all the unused columns (these will be calculated with normed data)
   datac$sd <- NULL
   datac$se <- NULL
@@ -1859,7 +1864,7 @@ AnovaRepeatedMeasures <- function(jaspResults, dataset = NULL, options) {
   
   # Collapse the normed data - now we can treat between and within vars the same
   ndatac <- .summarySE(ndata, measurevar_n, groupvars=c(betweenvars, withinvars), na.rm=na.rm, conf.interval=conf.interval, .drop=.drop, errorBarType=errorBarType,
-                       usePooledSE=usePooledSE)
+                       usePooledSE=usePooledSE, dependentName = dependentName, subjectName = subjectName)
   
   # Apply correction from Morey (2008) to the standard error and confidence interval
   # Get the product of the number of conditions of within-S variables
